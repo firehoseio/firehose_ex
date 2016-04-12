@@ -17,7 +17,9 @@ defmodule FirehoseEx.Mixfile do
   # Type "mix help compile.app" for more information
   def application do
     [
-      applications: [:logger],
+      applications: [
+        :logger, :plug, :cowboy
+      ],
       mod: {FirehoseEx, []}
     ]
   end
@@ -33,6 +35,9 @@ defmodule FirehoseEx.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
+      {:plug, "~> 1.1"},
+      {:cowboy, "~> 1.0"},
+      {:credo, "~> 0.3.0", only: :dev}
     ]
   end
 end
