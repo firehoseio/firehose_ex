@@ -1,4 +1,8 @@
 defmodule FirehoseEx do
+  @moduledoc """
+  FirehoseEx is a rewrite of PollEverywhere's Firehose in Elixir & Erlang/OTP.
+  """
+
   use Application
 
   # See http://elixir-lang.org/docs/stable/elixir/Application.html
@@ -7,8 +11,7 @@ defmodule FirehoseEx do
     import Supervisor.Spec, warn: false
 
     children = [
-      # Define workers and child supervisors to be supervised
-      # worker(FirehoseEx.Worker, [arg1, arg2, arg3]),
+      worker(FirehoseEx.WebServer, [Application.get_env(:firehose_ex, :web)]),
     ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
