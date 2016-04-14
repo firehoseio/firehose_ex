@@ -39,6 +39,7 @@ defmodule FirehoseEx.Mixfile do
       {:cowboy, "~> 1.0"},
       {:poolboy, "~> 1.5"},
       {:redix, "~> 0.3.6"},
+      {:poison, "~> 2.1"},
       {:credo, "~> 0.3.0", only: :dev}
     ]
   end
