@@ -1,9 +1,11 @@
 defmodule FirehoseEx.Channel do
   @moduledoc """
-  Firehose Channel implementation
+  Firehose Channel related logic
   """
 
   require Logger
+
+  @payload_delimiter "\n"
 
   def next_message(channel, last_sequence) do
     {:ok, [curr_seq, messages]} = FirehoseEx.Redis.pipeline([
@@ -38,8 +40,6 @@ defmodule FirehoseEx.Channel do
 
   def parse_seq(nil), do: nil
   def parse_seq(val) when is_binary(val), do: val |> String.to_integer
-
-  @payload_delimiter "\n"
 
   def subscribe(channel, opts \\ [timeout: :infinity]) do
     key = channel_updates_key(channel)
