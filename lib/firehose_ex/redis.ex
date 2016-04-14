@@ -3,6 +3,7 @@ defmodule FirehoseEx.Redis do
   Supervised Redis pool and helper functions for the Redis backend storage.
   """
 
+  require Logger
   use Supervisor
 
   def start_link(opts) do
@@ -10,18 +11,33 @@ defmodule FirehoseEx.Redis do
   end
 
   def init(redis_opts) do
-    pool_opts = [
-      name: {:local, :redix_pool},
-      worker_module: Redix,
-      size: redis_opts[:pool][:pool_size],
-      max_overflow: redis_opts[:pool][:max_overflow]
-    ]
-
+    pool_opts  = redis_opts[:pool]
     redis_opts = redis_opts |> Keyword.delete(:pool)
 
     children = [
-      :poolboy.child_spec(:redix_pool, pool_opts, redis_opts)
+      :poolboy.child_spec(
+        :redix_pool, [
+          name: {:local, :redix_pool},
+          worker_module: Redix,
+          size: pool_opts[:pool_size],
+          max_overflow: pool_opts[:max_overflow]
+        ],
+        redis_opts
+      ),
+
+      :poolboy.child_spec(
+        :redix_pubsub_pool, [
+          name: {:local, :redix_pubsub_pool},
+          worker_module: Redix.PubSub,
+          size: pool_opts[:pool_size],
+          max_overflow: pool_opts[:max_overflow]
+        ],
+        redis_opts
+      )
     ]
+
+    Logger.info "Starting FirehoseEx.Redis"
+    Logger.info "Connecting to Redis: #{redis_opts[:host]}:#{redis_opts[:port]}"
 
     supervise(children, strategy: :one_for_one, name: __MODULE__)
   end

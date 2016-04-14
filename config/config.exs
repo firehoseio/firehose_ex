@@ -17,6 +17,7 @@ config :firehose_ex, :redis,
   host: "localhost",
   port: 6379,
   password: nil,
+  database: nil,
   pool: [
     size: 10,
     max_overflow: 5
