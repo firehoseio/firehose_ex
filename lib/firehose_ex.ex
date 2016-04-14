@@ -12,6 +12,7 @@ defmodule FirehoseEx do
 
     children = [
       worker(FirehoseEx.WebServer, [Application.get_env(:firehose_ex, :web)]),
+      supervisor(FirehoseEx.Redis, [Application.get_env(:firehose_ex, :redis)])
     ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
