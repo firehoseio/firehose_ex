@@ -43,16 +43,13 @@ defmodule FirehoseEx.Channel do
 
   def subscribe(channel, opts \\ [timeout: :infinity]) do
     key = channel_updates_key(channel)
-    FirehoseEx.Redis.subscribe(key, self)
+    :ok = FirehoseEx.Redis.subscribe(key, self)
     receive do
-      {:redix_pubsub, :subscribe, ^key, nil} ->
-        receive do
-          {:redix_pubsub, :message, msg, ^key} ->
-            [^channel, sequence, message] = msg |> String.split(@payload_delimiter)
-            {message, sequence |> parse_seq}
-          after opts[:timeout] ->
-            Logger.info "Subscribe timed out for channel: #{channel} in pid: #{inspect self}"
-        end
+      {:redix_pubsub, :message, msg, ^key} ->
+        [^channel, sequence, message] = msg |> String.split(@payload_delimiter)
+        {message, sequence |> parse_seq}
+      after opts[:timeout] ->
+        Logger.info "Subscribe timed out for channel: #{channel} in pid: #{inspect self}"
     end
   end
 

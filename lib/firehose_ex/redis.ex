@@ -55,6 +55,20 @@ defmodule FirehoseEx.Redis do
       :redix_pubsub_pool,
       &Redix.PubSub.subscribe(&1, channels, recipient, opts)
     )
+
+    await_subscription_confimation(channels)
+  end
+
+  def await_subscription_confimation(channels) when is_list(channels) do
+    channels |> Enum.each(&await_subscription_confimation/1)
+    :ok
+  end
+
+  def await_subscription_confimation(channel) do
+    receive do
+      {:redix_pubsub, :subscribe, ^channel, nil} -> :ok
+      # TODO: add timeout?
+    end
   end
 
   def unsubscribe(channels, recipient, opts \\ []) do
