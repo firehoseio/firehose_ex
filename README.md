@@ -1,20 +1,13 @@
 # FirehoseEx
+## Firehose Rewrite (Proof of Concept) in Elixir
 
-**TODO: Add description**
+### FirehoseEx OTP Application layout
 
-## Installation
-
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed as:
-
-  1. Add firehose_ex to your list of dependencies in `mix.exs`:
-
-        def deps do
-          [{:firehose_ex, "~> 0.0.1"}]
-        end
-
-  2. Ensure firehose_ex is started before your application:
-
-        def application do
-          [applications: [:firehose_ex]]
-        end
-
+* FirehoseEx Application Supervisor
+  * WebServer (Worker)
+    * Cowboy web server supervision tree using FirehoseEx.Router for routing incoming HTTP Long-Polling requests
+    * Handle WebSocket requests via FirehoseEx.Router.WebSocket (TODO - not yet implemented)
+  * Redis (Supervisor)
+    * Redis pools using `poolboy` with own supervision tree
+      * General pool for Redis commands
+      * PubSub pool for Redis PubSub
