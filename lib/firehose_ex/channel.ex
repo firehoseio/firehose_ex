@@ -4,16 +4,17 @@ defmodule FirehoseEx.Channel do
   """
 
   require Logger
+  alias FirehoseEx.Redis
 
   @payload_delimiter "\n"
 
   def next_message(channel, last_sequence) do
-    {:ok, [curr_seq, messages]} = FirehoseEx.Redis.pipeline([
+    {:ok, [curr_seq, messages]} = Redis.pipeline([
       [:get, sequence_key(channel)],
       [:lrange, list_key(channel), 0, buffer_size]
     ])
 
-    Logger.debug "Redis.pipeline(#{sequence_key(channel)}) returned: `#{curr_seq}` and `#{inspect messages}`"
+    Logger.debug "pipeline returned: `#{curr_seq}` and `#{inspect messages}`"
 
     handle_next_message(channel, last_sequence, curr_seq |> parse_seq, messages)
   end
@@ -43,7 +44,7 @@ defmodule FirehoseEx.Channel do
 
   def subscribe(channel, opts \\ [timeout: :infinity]) do
     key = channel_updates_key(channel)
-    :ok = FirehoseEx.Redis.subscribe(key, self)
+    :ok = Redis.subscribe(key, self)
     receive do
       {:redix_pubsub, :message, msg, ^key} ->
         [^channel, sequence, message] = msg |> String.split(@payload_delimiter)
@@ -58,14 +59,14 @@ defmodule FirehoseEx.Channel do
   end
 
   def channel_updates_key(channel) do
-    FirehoseEx.Redis.key([channel, :channel_updates])
+    Redis.key([channel, :channel_updates])
   end
 
   def sequence_key(channel) do
-    FirehoseEx.Redis.key([channel, :sequence])
+    Redis.key([channel, :sequence])
   end
 
   def list_key(channel) do
-    FirehoseEx.Redis.key([channel, :list])
+    Redis.key([channel, :list])
   end
 end
