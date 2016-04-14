@@ -33,7 +33,7 @@ defmodule FirehoseEx.Channel do
       {message, last_seq + 1}
     else
       [message | _] = messages
-      Firehose.logger.debug "Sending latest message `#{message}` and sequence `#{curr_seq}` to client directly."
+      Logger.debug "Sending latest message `#{message}` and sequence `#{curr_seq}` to client directly."
       {message, curr_seq}
     end
   end
