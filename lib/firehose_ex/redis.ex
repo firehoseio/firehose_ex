@@ -50,6 +50,20 @@ defmodule FirehoseEx.Redis do
     :poolboy.transaction(:redix_pool, &Redix.pipeline(&1, cmds))
   end
 
+  def subscribe(channels, recipient, opts \\ []) do
+    :poolboy.transaction(
+      :redix_pubsub_pool,
+      &Redix.PubSub.subscribe(&1, channels, recipient, opts)
+    )
+  end
+
+  def unsubscribe(channels, recipient, opts \\ []) do
+    :poolboy.transaction(
+      :redix_pubsub_pool,
+      &Redix.PubSub.unsubscribe(&1, channels, recipient, opts)
+    )
+  end
+
   def key(segments) do
     "firehose:" <> Enum.join(segments, ":")
   end
