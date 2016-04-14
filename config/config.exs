@@ -3,7 +3,7 @@
 use Mix.Config
 
 config :logger, :console,
-  level: :info,
+  level: :debug,
   format: "$date $time [$level] $metadata$message\n",
   metadata: [:user_id]
 
