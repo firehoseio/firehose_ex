@@ -19,20 +19,28 @@ defmodule FirehoseEx.Channel do
     handle_next_message(channel, last_sequence, curr_seq |> parse_seq, messages)
   end
 
+  # Either this resource has never been seen before or we are all caught up.
+  # Subscribe and hope something gets published to this end-point.
   def handle_next_message(channel, _, nil, _), do: subscribe(channel)
-
   def handle_next_message(channel, last_seq, curr_seq, _)
-  when curr_seq - last_seq <= 0 do
+  when curr_seq - last_seq <= 0
+  do
     subscribe(channel)
   end
 
   def handle_next_message(channel, last_seq, curr_seq, messages) do
     diff = curr_seq - last_seq
     if diff < buffer_size do
+      # The client is kinda-sorta running behind, but has a chance to catch
+      # up. Catch them up FTW.
+      # But we won't "catch them up" if last_sequence was zero/nil because
+      # that implies the client is connecting for the 1st time.
       message = messages |> Enum.at(diff - 1)
       Logger.debug "Sending old message `#{message}` and sequence `#{curr_seq}` to client directly. Client is `#{diff}` behind, at `#{last_seq}`."
       {message, last_seq + 1}
     else
+      # The client is hopelessly behind and underwater. Just reset
+      # their whole world with the latest message.
       [message | _] = messages
       Logger.debug "Sending latest message `#{message}` and sequence `#{curr_seq}` to client directly."
       {message, curr_seq}
