@@ -47,7 +47,7 @@ defmodule FirehoseEx.Router do
 
   def json_response(conn, status, data) do
     conn
-    |> put_resp_content_type("text/json")
+    |> put_resp_content_type("application/json")
     |> send_resp(status, Poison.encode!(data))
   end
 
