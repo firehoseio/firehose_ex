@@ -85,16 +85,19 @@ defmodule FirehoseEx.Router do
   defp last_message_sequence(_), do: 0
 
   def cache_control(conn) do
+    import Enum,   only: [map: 2, into: 2]
+    import String, only: [strip: 1, split: 2, downcase: 1]
+
     case conn |> get_req_header("HTTP_CACHE_CONTROL") do
       [] -> %{}
       [val] ->
         val
-        |> String.split(",")
-        |> Enum.map(fn directive ->
-          [key, val] = directive |> String.split("=")
-          {key |> String.downcase, val}
+        |> split(",")
+        |> map(fn directive ->
+          [key, val] = directive |> strip |> split("=")
+          {key |> downcase, val}
         end)
-        |> Enum.into(%{})
+        |> into(%{})
     end
   end
 end
