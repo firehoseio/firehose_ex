@@ -6,8 +6,6 @@ defmodule FirehoseEx.Channel do
   require Logger
   alias FirehoseEx.Redis
 
-  @payload_delimiter "\n"
-
   def publish(channel, message, opts \\ []) do
     ttl = opts[:ttl] || default_ttl(opts)
     buf_size = opts[:buffer_size] || buffer_size
@@ -62,8 +60,8 @@ defmodule FirehoseEx.Channel do
     :ok = Redis.subscribe(key, self)
     receive do
       {:redix_pubsub, :message, msg, ^key} ->
-        [^channel, sequence, message] = msg |> String.split(@payload_delimiter)
-        {message, sequence |> parse_seq}
+        msg
+        |> FirehoseEx.Channel.Publisher.from_payload
       after opts[:timeout] ->
         Logger.info "Subscribe timed out for channel: #{channel} in pid: #{inspect self}"
     end

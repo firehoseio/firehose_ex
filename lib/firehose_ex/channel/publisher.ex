@@ -10,10 +10,26 @@ defmodule FirehoseEx.Channel.Publisher do
   require Logger
   alias FirehoseEx.Redis
 
+  @payload_delimiter "\n"
+
   def start_link do
     Logger.info "Starting FirehoseEx.Channel.Publisher Agent"
     # default to nil as initial value
     Agent.start_link(fn -> nil end, name: __MODULE__)
+  end
+
+  def script_digest do
+    Agent.get_and_update(__MODULE__, fn
+      nil ->
+        digest = register_publish_script
+        {digest, digest}
+      digest ->
+        {digest, digest}
+    end)
+  end
+
+  def register_script! do
+    Agent.update(__MODULE__, fn _ -> register_publish_script end)
   end
 
   def eval_publish_script(channel, message, ttl, buffer_size) do
@@ -41,20 +57,6 @@ defmodule FirehoseEx.Channel.Publisher do
         register_script!
         eval_publish_script(channel, message, ttl, buffer_size)
     end
-  end
-
-  def script_digest do
-    Agent.get_and_update(__MODULE__, fn
-      nil ->
-        digest = register_publish_script
-        {digest, digest}
-      digest ->
-        {digest, digest}
-    end)
-  end
-
-  def register_script! do
-    Agent.update(__MODULE__, fn _ -> register_publish_script end)
   end
 
   @redis_publish_script """
@@ -89,5 +91,10 @@ defmodule FirehoseEx.Channel.Publisher do
     {:ok, digest} = Redis.command [:script, :load, @redis_publish_script]
     Logger.info "Registered Lua publishing script with Redis => #{digest}"
     digest
+  end
+
+  def from_payload(payload) do
+    [channel, sequence, message] = payload |> String.split(@payload_delimiter)
+    {message, sequence |> FirehoseEx.Channel.parse_seq}
   end
 end
