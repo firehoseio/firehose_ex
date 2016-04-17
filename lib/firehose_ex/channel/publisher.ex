@@ -19,17 +19,15 @@ defmodule FirehoseEx.Channel.Publisher do
   end
 
   def script_digest do
-    Agent.get_and_update(__MODULE__, fn
-      nil ->
-        digest = register_publish_script
-        {digest, digest}
-      digest ->
-        {digest, digest}
-    end)
+    with nil <- Agent.get(__MODULE__, &(&1)) do
+      register_script!
+    end
   end
 
   def register_script! do
-    Agent.update(__MODULE__, fn _ -> register_publish_script end)
+    digest = register_publish_script
+    Agent.update(__MODULE__, fn _ -> digest end)
+    digest
   end
 
   def eval_publish_script(channel, message, ttl, buffer_size) do
