@@ -12,7 +12,7 @@ defmodule FirehoseEx.Channel do
     ttl = opts[:ttl] || default_ttl(opts)
     buf_size = opts[:buffer_size] || buffer_size
 
-    FirehoseEx.Channel.Publisher.eval_publish_script(channel,  message, ttl, buf_size)
+    FirehoseEx.Channel.Publisher.eval_publish_script(channel, message, ttl, buf_size)
   end
 
   def next_message(channel, last_sequence) do
