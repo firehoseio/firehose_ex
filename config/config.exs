@@ -11,7 +11,8 @@ config :firehose_ex, :web,
   port: 7474
 
 config :firehose_ex, :channel,
-  buffer_size: 100  # default channel buffer size
+  buffer_size: 100,  # default channel buffer size
+  buffer_ttl:  60 * 60 * 24
 
 config :firehose_ex, :redis,
   host: "localhost",

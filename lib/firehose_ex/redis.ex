@@ -11,6 +11,8 @@ defmodule FirehoseEx.Redis do
   end
 
   def init(redis_opts) do
+    import Supervisor.Spec, warn: false
+
     pool_opts  = redis_opts[:pool]
     redis_opts = redis_opts |> Keyword.delete(:pool)
 
@@ -33,7 +35,9 @@ defmodule FirehoseEx.Redis do
           max_overflow: pool_opts[:max_overflow]
         ],
         redis_opts
-      )
+      ),
+
+      worker(FirehoseEx.Channel.Publisher, [])
     ]
 
     Logger.info "Starting FirehoseEx.Redis"

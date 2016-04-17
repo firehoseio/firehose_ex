@@ -8,6 +8,13 @@ defmodule FirehoseEx.Channel do
 
   @payload_delimiter "\n"
 
+  def publish(channel, message, opts \\ []) do
+    ttl = opts[:ttl] || default_ttl(opts)
+    buf_size = opts[:buffer_size] || buffer_size
+
+    FirehoseEx.Channel.Publisher.eval_publish_script(channel,  message, ttl, buf_size)
+  end
+
   def next_message(channel, last_sequence) do
     {:ok, [curr_seq, messages]} = Redis.pipeline([
       [:get, sequence_key(channel)],
@@ -51,7 +58,7 @@ defmodule FirehoseEx.Channel do
   def parse_seq(val) when is_binary(val), do: val |> String.to_integer
 
   def subscribe(channel, opts \\ [timeout: :infinity]) do
-    key = channel_updates_key(channel)
+    key = updates_key(channel)
     :ok = Redis.subscribe(key, self)
     receive do
       {:redix_pubsub, :message, msg, ^key} ->
@@ -66,7 +73,11 @@ defmodule FirehoseEx.Channel do
     Application.get_env(:firehose_ex, :channel)[:buffer_size]
   end
 
-  def channel_updates_key(channel) do
+  def default_ttl(opts) do
+    Application.get_env(:firehose_ex, :channel)[:buffer_ttl]
+  end
+
+  def updates_key(channel) do
     Redis.key([channel, :channel_updates])
   end
 
