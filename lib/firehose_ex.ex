@@ -4,22 +4,28 @@ defmodule FirehoseEx do
   """
 
   use Application
+  import Supervisor.Spec, warn: false
 
   # See http://elixir-lang.org/docs/stable/elixir/Application.html
   # for more information on OTP Applications
-  def start(_type, _args) do
-    import Supervisor.Spec, warn: false
-
-    children = [
-      worker(FirehoseEx.WebServer, [web_conf]),
-      supervisor(FirehoseEx.Redis, [Application.get_env(:firehose_ex, :redis)])
-    ]
+  def start(_type, args) do
+    args = [web_server: true] |> Keyword.merge(args)
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: FirehoseEx.Supervisor]
-    Supervisor.start_link(children, opts)
+    Supervisor.start_link(children(args), opts)
   end
+
+  def children(web_server: true), do: [
+    worker(FirehoseEx.WebServer, [web_conf]) | default_children
+  ]
+
+  def children(_), do: default_children
+
+  def default_children, do: [
+    supervisor(FirehoseEx.Redis, [Application.get_env(:firehose_ex, :redis)])
+  ]
 
   @version Mix.Project.config[:version]
   def version do

@@ -18,7 +18,7 @@ defmodule FirehoseEx.Mixfile do
   def application do
     [
       applications: [
-        :logger, :plug, :cowboy, :poolboy, :redix
+        :logger, :plug, :cowboy, :poolboy, :redix, :httpotion
       ],
       mod: {FirehoseEx, []}
     ]
@@ -40,6 +40,8 @@ defmodule FirehoseEx.Mixfile do
       {:poolboy, "~> 1.5"},
       {:redix, "~> 0.3.6"},
       {:poison, "~> 2.1"},
+      {:httpotion, "~> 2.2"},
+      {:benchfella, "~> 0.3.0"},
       {:credo, "~> 0.3.0", only: :dev}
     ]
   end
