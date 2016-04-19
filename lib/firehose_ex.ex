@@ -11,7 +11,7 @@ defmodule FirehoseEx do
     import Supervisor.Spec, warn: false
 
     children = [
-      worker(FirehoseEx.WebServer, [Application.get_env(:firehose_ex, :web)]),
+      worker(FirehoseEx.WebServer, [web_conf]),
       supervisor(FirehoseEx.Redis, [Application.get_env(:firehose_ex, :redis)])
     ]
 
@@ -24,5 +24,13 @@ defmodule FirehoseEx do
   @version Mix.Project.config[:version]
   def version do
     @version
+  end
+
+  def web_conf do
+    conf = Application.get_env(:firehose_ex, :web)
+    case System.get_env "PORT" do
+      nil -> conf
+      p   -> conf |> Keyword.merge(port: p |> String.to_integer)
+    end
   end
 end

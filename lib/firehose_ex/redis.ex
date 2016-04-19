@@ -17,26 +17,8 @@ defmodule FirehoseEx.Redis do
     redis_opts = redis_opts |> Keyword.delete(:pool)
 
     children = [
-      :poolboy.child_spec(
-        :redix_pool, [
-          name: {:local, :redix_pool},
-          worker_module: Redix,
-          size: pool_opts[:pool_size],
-          max_overflow: pool_opts[:max_overflow]
-        ],
-        redis_opts
-      ),
-
-      :poolboy.child_spec(
-        :redix_pubsub_pool, [
-          name: {:local, :redix_pubsub_pool},
-          worker_module: Redix.PubSub,
-          size: pool_opts[:pool_size],
-          max_overflow: pool_opts[:max_overflow]
-        ],
-        redis_opts
-      ),
-
+      redis_pool(:redix_pool, Redix, pool_opts, redis_opts),
+      redis_pool(:redix_pubsub_pool, Redix.PubSub, pool_opts, redis_opts),
       worker(FirehoseEx.Channel.Publisher, [])
     ]
 
@@ -44,6 +26,18 @@ defmodule FirehoseEx.Redis do
     Logger.info "Connecting to Redis: #{redis_opts[:host]}:#{redis_opts[:port]}"
 
     supervise(children, strategy: :one_for_one, name: __MODULE__)
+  end
+
+  def redis_pool(name, worker_module, pool_opts, redis_opts) do
+    :poolboy.child_spec(
+      name, [
+        name: {:local, name},
+        worker_module: worker_module,
+        size: pool_opts[:pool_size],
+        max_overflow: pool_opts[:max_overflow]
+      ],
+      redis_opts
+    )
   end
 
   def command(cmd) do
