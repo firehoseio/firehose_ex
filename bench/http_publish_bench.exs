@@ -126,46 +126,26 @@ defmodule HttpPublishBenchmark do
     Agent.get(:request_counter, &(&1))
   end
 
-  bench "http-p010r010" do
-    multi_publish(10, "test/channel")
-    async_multi_get(10, "test/channel")
+  def multi_publish_get(publish, get, channel) do
+    t1 = Task.async fn ->
+      multi_publish(publish, channel)
+    end
+    t2 = Task.async fn ->
+      async_multi_get(get, channel)
+    end
+    Task.await(t1)
+    Task.await(t2)
   end
 
-  bench "http-p050r025" do
-    multi_publish(50, "test/channel")
-    async_multi_get(25, "test/channel")
-  end
+  bench "http-p010r010", do: multi_publish_get(10, 10, "test/channel")
+  bench "http-p050r025", do: multi_publish_get(50, 25, "test/channel")
+  bench "http-p050r050", do: multi_publish_get(50, 50, "test/channel")
+  bench "http-p100r100", do: multi_publish_get(100, 100, "test/channel")
+  bench "http-p200r100", do: multi_publish_get(200, 100, "test/channel")
+  bench "http-p200r200", do: multi_publish_get(200, 200, "test/channel")
+  bench "http-p500r200", do: multi_publish_get(500, 200, "test/channel")
+  bench "http-p500r500", do: multi_publish_get(500, 500, "test/channel")
 
-  bench "http-p050r050" do
-    multi_publish(50, "test/channel")
-    async_multi_get(50, "test/channel")
-  end
-
-  bench "http-p100r100" do
-    multi_publish(100, "test/channel")
-    async_multi_get(100, "test/channel")
-  end
-
-  bench "http-p200r100" do
-    multi_publish(200, "test/channel")
-    async_multi_get(100, "test/channel")
-  end
-
-  bench "http-p200r200" do
-    multi_publish(200, "test/channel")
-    async_multi_get(200, "test/channel")
-  end
-
-  bench "http-p500r200" do
-    multi_publish(500, "test/channel")
-    async_multi_get(200, "test/channel")
-  end
-
-  bench "http-p500r500" do
-    multi_publish(500, "test/channel")
-    async_multi_get(500, "test/channel")
-  end
-  #
   # bench "http-2-p10r025" do
   #   await_async_multi 2, fn i ->
   #     multi_publish(10, "test/channel/#{i}")
