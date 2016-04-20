@@ -1,0 +1,4 @@
+init_config:
+
+instances:
+  - container_name: firehose_ex

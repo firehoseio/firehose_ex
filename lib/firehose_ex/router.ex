@@ -20,6 +20,11 @@ defmodule FirehoseEx.Router do
 
   # routes
 
+  get "/healthcheck" do
+    conn
+    |> send_resp(200, "")
+  end
+
   get "/revision" do
     conn
     |> send_resp(200, System.get_env("REVISION") || "")

@@ -1,0 +1,5 @@
+init_config:
+
+instances:
+   -   host: PLACEHOLDER_REDIS_HOST_PLACEHOLDER
+       port: 6379
