@@ -3,11 +3,11 @@ defmodule HttpPublishBenchmark do
 
   setup_all do
     HTTPotion.start
-    counter = Agent.start(fn -> 0 end, name: :request_counter)
+    {:ok, counter} = Agent.start(fn -> 0 end, name: :request_counter)
     collector = spawn(__MODULE__, :response_collector, [0])
     Process.register(collector, :response_collector)
 
-    {:ok, [collector: collector, collector: collector]}
+    {:ok, [counter: counter, collector: collector]}
   end
 
   teardown_all [counter: counter, collector: coll] do
@@ -20,7 +20,7 @@ defmodule HttpPublishBenchmark do
           send coll, {:get_results, self}
           receive do
             {:collected, count} ->
-              IO.puts "Received #{counter_val} results"
+              IO.puts "Received #{count} results"
             after 1000 ->
               IO.puts "Error: timeout after 5 secs"
           end
@@ -66,7 +66,7 @@ defmodule HttpPublishBenchmark do
       Agent.update(:request_counter, &(&1 + 1))
       result
     rescue
-      e in HTTPotion.HTTPError ->
+      _ in HTTPotion.HTTPError ->
         publish(channel, counter)
     end
   end
@@ -89,7 +89,7 @@ defmodule HttpPublishBenchmark do
         stream_to: Process.whereis(:response_collector)
       )
     rescue
-      e in HTTPotion.HTTPError ->
+      _ in HTTPotion.HTTPError ->
         async_get(channel)
     end
     :ok

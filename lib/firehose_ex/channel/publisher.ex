@@ -93,6 +93,6 @@ defmodule FirehoseEx.Channel.Publisher do
 
   def from_payload(payload) do
     [channel, sequence, message] = payload |> String.split(@payload_delimiter)
-    {message, sequence |> FirehoseEx.Channel.parse_seq}
+    {channel, message, sequence |> FirehoseEx.Channel.parse_seq}
   end
 end

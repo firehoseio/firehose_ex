@@ -44,4 +44,4 @@ defmodule PublishBenchmark do
   bench "p300", do: multi_publish(300, "test/channel")
   bench "p400", do: multi_publish(400, "test/channel")
   bench "p500", do: multi_publish(500, "test/channel")
-en
+end

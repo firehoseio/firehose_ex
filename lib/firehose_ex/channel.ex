@@ -7,7 +7,7 @@ defmodule FirehoseEx.Channel do
   alias FirehoseEx.Redis
 
   def publish(channel, message, opts \\ []) do
-    ttl = opts[:ttl] || default_ttl(opts)
+    ttl = opts[:ttl] || default_ttl
     buf_size = opts[:buffer_size] || buffer_size
 
     FirehoseEx.Channel.Publisher.eval_publish_script(channel, message, ttl, buf_size)
@@ -33,7 +33,7 @@ defmodule FirehoseEx.Channel do
     subscribe(channel)
   end
 
-  def handle_next_message(channel, last_seq, curr_seq, messages) do
+  def handle_next_message(_channel, last_seq, curr_seq, messages) do
     diff = curr_seq - last_seq
     if diff < buffer_size do
       # The client is kinda-sorta running behind, but has a chance to catch
@@ -60,8 +60,8 @@ defmodule FirehoseEx.Channel do
     :ok = Redis.subscribe(key, self)
     receive do
       {:redix_pubsub, :message, msg, ^key} ->
-        msg
-        |> FirehoseEx.Channel.Publisher.from_payload
+        {_channel, msg, curr_seq} = msg |> FirehoseEx.Channel.Publisher.from_payload
+        {msg, curr_seq}
       after opts[:timeout] ->
         Logger.info "Subscribe timed out for channel: #{channel} in pid: #{inspect self}"
     end
@@ -71,7 +71,7 @@ defmodule FirehoseEx.Channel do
     Application.get_env(:firehose_ex, :channel)[:buffer_size]
   end
 
-  def default_ttl(opts) do
+  def default_ttl do
     Application.get_env(:firehose_ex, :channel)[:buffer_ttl]
   end
 

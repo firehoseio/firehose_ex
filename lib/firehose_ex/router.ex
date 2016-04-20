@@ -44,7 +44,7 @@ defmodule FirehoseEx.Router do
       end
     )
 
-    {:ok, sequence} = FirehoseEx.Channel.publish(channel, body, opts)
+    {:ok, _sequence} = FirehoseEx.Channel.publish(channel, body, opts)
 
     conn
     |> put_resp_content_type("text/plain")
