@@ -7,7 +7,7 @@ defmodule HttpPublishBenchmark do
     collector = spawn(__MODULE__, :response_collector, [0])
     Process.register(collector, :response_collector)
 
-    {:ok, [collector: collector]}
+    {:ok, [collector: collector, collector: collector]}
   end
 
   teardown_all [counter: counter, collector: coll] do

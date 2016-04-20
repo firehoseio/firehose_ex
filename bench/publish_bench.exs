@@ -9,12 +9,9 @@ defmodule PublishBenchmark do
     {:ok, [counter: counter]}
   end
 
-  teardown_all _ do
+  teardown_all [counter: counter] do
     IO.puts "Counter: #{counter_val}"
-  end
-
-  def uri(channel) do
-    "http://localhost:7474/#{channel}"
+    Process.exit(counter, :kill)
   end
 
   def publish(channel, counter) do
@@ -37,44 +34,14 @@ defmodule PublishBenchmark do
     Agent.get(:request_counter, &(&1))
   end
 
-  bench "p001" do
-    publish("test/channel", counter_val)
-    :ok
-  end
-
-  bench "p005" do
-    multi_publish(5, "test/channel")
-  end
-
-  bench "p010" do
-    multi_publish(10, "test/channel")
-  end
-
-  bench "p050" do
-    multi_publish(50, "test/channel")
-  end
-
-  bench "p100" do
-    multi_publish(100, "test/channel")
-  end
-
-  bench "p100" do
-    multi_publish(100, "test/channel")
-  end
-
-  bench "p200" do
-    multi_publish(200, "test/channel")
-  end
-
-  bench "p300" do
-    multi_publish(300, "test/channel")
-  end
-
-  bench "p400" do
-    multi_publish(400, "test/channel")
-  end
-
-  bench "p500" do
-    multi_publish(500, "test/channel")
-  end
-end
+  bench "p001", do: multi_publish(1, "test/channel")
+  bench "p005", do: multi_publish(5, "test/channel")
+  bench "p010", do: multi_publish(10, "test/channel")
+  bench "p050", do: multi_publish(50, "test/channel")
+  bench "p100", do: multi_publish(100, "test/channel")
+  bench "p100", do: multi_publish(100, "test/channel")
+  bench "p200", do: multi_publish(200, "test/channel")
+  bench "p300", do: multi_publish(300, "test/channel")
+  bench "p400", do: multi_publish(400, "test/channel")
+  bench "p500", do: multi_publish(500, "test/channel")
+en
