@@ -13,8 +13,7 @@ defmodule FirehoseEx.Redis do
   def init(redis_opts) do
     import Supervisor.Spec, warn: false
 
-    pool_opts  = redis_opts[:pool]
-    redis_opts = redis_opts |> Keyword.delete(:pool)
+    pool_opts = Application.get_env(:firehose_ex, :redis_pool)
 
     children = [
       redis_pool(:redix_pool, Redix, pool_opts, redis_opts),

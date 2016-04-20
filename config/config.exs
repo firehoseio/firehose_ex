@@ -18,11 +18,11 @@ config :firehose_ex, :redis,
   host: "localhost",
   port: 6379,
   password: nil,
-  database: nil,
-  pool: [
-    size: 10,
-    max_overflow: 5
-  ]
+  database: nil
+
+config :firehose_ex, :redis_pool,
+  size: 10,
+  max_overflow: 5
 
 # load environment specific config if it exists
 # any identical config settings will override the ones specified here
