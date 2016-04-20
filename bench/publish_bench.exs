@@ -4,7 +4,7 @@ defmodule PublishBenchmark do
 
   setup_all do
     {:ok, _pid} = FirehoseEx.start(nil, web_server: false)
-    counter = Agent.start(fn -> 0 end, name: :request_counter)
+    {:ok, counter} = Agent.start(fn -> 0 end, name: :request_counter)
     IO.puts "Counter: #{counter_val}"
     {:ok, [counter: counter]}
   end
