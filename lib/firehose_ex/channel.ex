@@ -5,6 +5,8 @@ defmodule FirehoseEx.Channel do
 
   require Logger
   alias FirehoseEx.Redis
+  alias FirehoseEx.Subscription
+  alias FirehoseEx.Message
 
   def publish(channel, message, opts \\ []) do
     ttl = opts[:ttl] || default_ttl
@@ -26,11 +28,11 @@ defmodule FirehoseEx.Channel do
 
   # Either this resource has never been seen before or we are all caught up.
   # Subscribe and hope something gets published to this end-point.
-  def handle_next_message(channel, _, nil, _), do: subscribe(channel)
+  def handle_next_message(channel, last_seq, nil, _), do: subscribe(channel, last_seq)
   def handle_next_message(channel, last_seq, curr_seq, _)
   when curr_seq - last_seq <= 0
   do
-    subscribe(channel)
+    subscribe(channel, last_seq)
   end
 
   def handle_next_message(_channel, last_seq, curr_seq, messages) do
@@ -55,12 +57,17 @@ defmodule FirehoseEx.Channel do
   def parse_seq(nil), do: nil
   def parse_seq(val) when is_binary(val), do: val |> String.to_integer
 
-  def subscribe(channel, opts \\ [timeout: :infinity]) do
-    key = updates_key(channel)
-    :ok = Redis.subscribe(key, self)
+  def subscribe(channel, last_seq \\ nil, opts \\ [timeout: :infinity]) do
+    Logger.debug "Subscribing to #{channel} with last_sequence=#{inspect last_seq}"
+    subscription = %Subscription{
+      channel: channel,
+      subscriber: self,
+      last_sequence: last_seq
+    }
+
+    :ok = FirehoseEx.Subscription.Manager.subscribe(subscription)
     receive do
-      {:redix_pubsub, :message, msg, ^key} ->
-        {_channel, msg, curr_seq} = msg |> FirehoseEx.Channel.Publisher.from_payload
+      %Message{channel: ^channel, content: msg, sequence: curr_seq} ->
         {msg, curr_seq}
       after opts[:timeout] ->
         Logger.info "Subscribe timed out for channel: #{channel} in pid: #{inspect self}"
@@ -76,9 +83,6 @@ defmodule FirehoseEx.Channel do
     Application.get_env(:firehose_ex, :channel)[:buffer_ttl]
   end
 
-  def updates_key(channel) do
-    Redis.key([channel, :channel_updates])
-  end
 
   def sequence_key(channel) do
     Redis.key([channel, :sequence])
@@ -86,5 +90,9 @@ defmodule FirehoseEx.Channel do
 
   def list_key(channel) do
     Redis.key([channel, :list])
+  end
+
+  def channel_updates_key do
+    Redis.key([:channel_updates])
   end
 end

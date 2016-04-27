@@ -30,25 +30,14 @@ defmodule FirehoseEx.Router do
     |> send_resp(200, "TODO")
   end
 
-  put _ do
-    {:ok, body, conn} = conn |> read_body
-    channel = conn.request_path
-    ttl     = cache_control(conn)["max-age"]
-
-    Logger.debug "HTTP published #{body} to #{channel} with ttl #{inspect ttl}"
-
-    opts = [ttl: ttl] |> Keyword.merge(
-      case conn |> get_req_header("HTTP_X_FIREHOSE_BUFFER_SIZE") do
-        [] -> []
-        [bs]  -> [buffer_size: bs |> String.to_integer]
-      end
-    )
-
-    {:ok, _sequence} = FirehoseEx.Channel.publish(channel, body, opts)
-
+  post _ do
     conn
-    |> put_resp_content_type("text/plain")
-    |> send_resp(202, "")
+    |> handle_publish
+  end
+
+  put _ do
+    conn
+    |> handle_publish
   end
 
   get _ do
@@ -70,6 +59,28 @@ defmodule FirehoseEx.Router do
     conn
     |> put_resp_header("Allow", "GET")
     |> send_resp(405, "#{conn.method} not supported.")
+  end
+
+  def handle_publish(conn) do
+    {:ok, body, conn} = conn |> read_body
+    channel = conn.request_path
+    ttl     = cache_control(conn)["max-age"]
+    body    = body |> String.strip
+
+    Logger.debug "HTTP published #{body} to #{channel} with ttl #{inspect ttl}"
+
+    opts = [ttl: ttl] |> Keyword.merge(
+      case conn |> get_req_header("HTTP_X_FIREHOSE_BUFFER_SIZE") do
+        [] -> []
+        [bs]  -> [buffer_size: bs |> String.to_integer]
+      end
+    )
+
+    {:ok, _sequence} = FirehoseEx.Channel.publish(channel, body, opts)
+
+    conn
+    |> put_resp_content_type("text/plain")
+    |> send_resp(202, "")
   end
 
   defp json_response(conn, status, data) do

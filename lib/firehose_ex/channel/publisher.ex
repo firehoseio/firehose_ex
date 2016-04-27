@@ -9,6 +9,7 @@ defmodule FirehoseEx.Channel.Publisher do
 
   require Logger
   alias FirehoseEx.Redis
+  alias FirehoseEx.Message
 
   @payload_delimiter "\n"
 
@@ -31,12 +32,12 @@ defmodule FirehoseEx.Channel.Publisher do
   end
 
   def eval_publish_script(channel, message, ttl, buffer_size) do
-    import FirehoseEx.Channel, only: [sequence_key: 1, list_key: 1, updates_key: 1]
+    import FirehoseEx.Channel, only: [sequence_key: 1, list_key: 1, channel_updates_key: 0]
 
     script_args = [
       sequence_key(channel),
       list_key(channel),
-      updates_key(channel),
+      channel_updates_key,
       ttl,
       message,
       buffer_size,
@@ -91,8 +92,12 @@ defmodule FirehoseEx.Channel.Publisher do
     digest
   end
 
-  def from_payload(payload) do
+  def message_from_payload(payload) do
     [channel, sequence, message] = payload |> String.split(@payload_delimiter)
-    {channel, message, sequence |> FirehoseEx.Channel.parse_seq}
+    %Message{
+      channel: channel,
+      content: message,
+      sequence: FirehoseEx.Channel.parse_seq(sequence)
+    }
   end
 end
