@@ -126,12 +126,12 @@ defmodule HttpPublishBenchmark do
     Agent.get(:request_counter, &(&1))
   end
 
-  def multi_publish_get(publish, get, channel) do
+  def multi_publish_get(publish_amount, get_amount, channel) do
     t1 = Task.async fn ->
-      multi_publish(publish, channel)
+      multi_publish(publish_amount, channel)
     end
     t2 = Task.async fn ->
-      async_multi_get(get, channel)
+      async_multi_get(get_amount, channel)
     end
     Task.await(t1)
     Task.await(t2)
