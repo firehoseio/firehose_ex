@@ -9,7 +9,7 @@ defmodule FirehoseEx do
   # See http://elixir-lang.org/docs/stable/elixir/Application.html
   # for more information on OTP Applications
   def start(_type, args) do
-    args = [web_server: true] |> Keyword.merge(args)
+    args = Keyword.merge([web_server: true], args)
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options
