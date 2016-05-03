@@ -64,6 +64,7 @@ defmodule FirehoseEx.Channel do
         {msg, curr_seq}
       after opts[:timeout] ->
         Logger.info "Subscribe timed out for channel: #{channel} in pid: #{inspect self}"
+        :timeout
     end
   end
 
