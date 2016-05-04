@@ -1,0 +1,7 @@
+init_config:
+
+instances:
+  - name: FirehoseEx Nginx Status
+    # This IP is the default IP used for the Docker Bridge.
+    # We need to be careful because Docker could choose a different IP, in theory.
+    nginx_status_url: http://172.17.42.1:1080/status

@@ -1,10 +1,10 @@
 init_config:
 
 instances:
-  - name: Datadog Aggregator HTTP Check
+  - name: FirehoseEx HTTP Check
     # This IP is the default IP used for the Docker Bridge.
     # We need to be careful because Docker could choose a different IP, in theory.
-    url: http://172.17.42.1:7474/healthcheck
+    url: http://172.17.42.1:8080/healthcheck
     timeout: 2
     threshold: 3
     window: 5
