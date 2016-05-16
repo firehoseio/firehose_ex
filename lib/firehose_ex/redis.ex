@@ -19,7 +19,7 @@ defmodule FirehoseEx.Redis do
     children = [
       redis_pool(:redix_pool, Redix, pool_opts, redis_opts),
       redis_pool(:redix_pubsub_pool, Redix.PubSub, pool_opts, redis_opts),
-      worker(FirehoseEx.Channel.Publisher, [])
+      worker(FirehoseEx.RedisChannel.Publisher, [])
     ]
 
     Logger.info "Starting FirehoseEx.Redis"

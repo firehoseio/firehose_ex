@@ -1,9 +1,9 @@
-defmodule FirehoseEx.Channel.Test do
+defmodule FirehoseEx.RedisChannel.Test do
   use ExUnit.Case
   use TestHelper
 
-  doctest FirehoseEx.Channel
-  alias FirehoseEx.Channel
+  doctest FirehoseEx.RedisChannel
+  alias FirehoseEx.RedisChannel, as: Channel
 
   def publish(chan, messages) do
     spawn fn ->
@@ -24,8 +24,7 @@ defmodule FirehoseEx.Channel.Test do
 
   test "Channel.subscribe", %{channel: chan} do
     messages = ["{'test': 'message1'}", "{'test': 'message2'}"]
-    t = publish(chan, messages)
-
+    publish(chan, messages)
     assert {"{'test': 'message1'}", 1} = Channel.subscribe(chan, timeout: 50)
     assert {"{'test': 'message2'}", 2} = Channel.subscribe(chan, timeout: 50)
     assert :timeout = Channel.subscribe(chan, timeout: 50)

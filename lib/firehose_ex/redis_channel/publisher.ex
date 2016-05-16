@@ -1,4 +1,4 @@
-defmodule FirehoseEx.Channel.Publisher do
+defmodule FirehoseEx.RedisChannel.Publisher do
   @moduledoc """
   This module implements a Agent that keeps track of the publish script digest
   value returned by Redis when registering the lua publish script.
@@ -9,11 +9,12 @@ defmodule FirehoseEx.Channel.Publisher do
 
   require Logger
   alias FirehoseEx.Redis
+  alias FirehoseEx.RedisChannel
 
   @payload_delimiter "\n"
 
   def start_link do
-    Logger.info "Starting FirehoseEx.Channel.Publisher Agent"
+    Logger.info "Starting FirehoseEx.RedisChannel.Publisher Agent"
     # default to nil as initial value
     Agent.start_link(fn -> nil end, name: __MODULE__)
   end
@@ -31,7 +32,7 @@ defmodule FirehoseEx.Channel.Publisher do
   end
 
   def eval_publish_script(channel, message, ttl, buffer_size) do
-    import FirehoseEx.Channel, only: [sequence_key: 1, list_key: 1, updates_key: 1]
+    import RedisChannel, only: [sequence_key: 1, list_key: 1, updates_key: 1]
 
     script_args = [
       sequence_key(channel),
@@ -93,6 +94,6 @@ defmodule FirehoseEx.Channel.Publisher do
 
   def from_payload(payload) do
     [channel, sequence, message] = payload |> String.split(@payload_delimiter)
-    {channel, message, sequence |> FirehoseEx.Channel.parse_seq}
+    {channel, message, sequence |> RedisChannel.parse_seq}
   end
 end

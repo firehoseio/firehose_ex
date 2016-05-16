@@ -1,6 +1,6 @@
 defmodule PublishBenchmark do
   use Benchfella
-  alias FirehoseEx.Channel
+  alias FirehoseEx.RedisChannel
 
   setup_all do
     {:ok, _pid} = FirehoseEx.start(nil, web_server: false)
@@ -17,7 +17,7 @@ defmodule PublishBenchmark do
   def publish(channel, counter) do
     msg = "{'hello': 'world', 'counter': #{counter}}"
     Agent.update(:request_counter, &(&1 + 1))
-    Channel.publish(channel, msg)
+    RedisChannel.publish(channel, msg)
   end
 
   def multi_publish(1, channel) do

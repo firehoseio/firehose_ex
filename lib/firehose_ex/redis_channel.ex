@@ -1,16 +1,17 @@
-defmodule FirehoseEx.Channel do
+defmodule FirehoseEx.RedisChannel do
   @moduledoc """
   Firehose Channel related logic
   """
 
   require Logger
   alias FirehoseEx.Redis
+  alias FirehoseEx.RedisChannel.Publisher
 
   def publish(channel, message, opts \\ []) do
     ttl = opts[:ttl] || default_ttl
     buf_size = opts[:buffer_size] || buffer_size
 
-    FirehoseEx.Channel.Publisher.eval_publish_script(channel, message, ttl, buf_size)
+    Publisher.eval_publish_script(channel, message, ttl, buf_size)
   end
 
   def next_message(channel, last_sequence) do
@@ -60,7 +61,7 @@ defmodule FirehoseEx.Channel do
     :ok = Redis.subscribe(key, self)
     receive do
       {:redix_pubsub, :message, msg, ^key} ->
-        {_channel, msg, curr_seq} = msg |> FirehoseEx.Channel.Publisher.from_payload
+        {_channel, msg, curr_seq} = msg |> Publisher.from_payload
         {msg, curr_seq}
       after opts[:timeout] ->
         Logger.info "Subscribe timed out for channel: #{channel} in pid: #{inspect self}"

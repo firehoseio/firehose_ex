@@ -44,7 +44,7 @@ defmodule FirehoseEx.Router do
       end
     )
 
-    {:ok, _sequence} = FirehoseEx.Channel.publish(channel, body, opts)
+    {:ok, _sequence} = FirehoseEx.RedisChannel.publish(channel, body, opts)
 
     conn
     |> put_resp_content_type("text/plain")
@@ -59,7 +59,7 @@ defmodule FirehoseEx.Router do
       conn
       |> send_resp(400, "The last_message_sequence parameter may not be less than zero")
     else
-      {msg, curr_seq} = FirehoseEx.Channel.next_message(conn.request_path, last_sequence)
+      {msg, curr_seq} = FirehoseEx.RedisChannel.next_message(conn.request_path, last_sequence)
       conn
       |> json_response(200, %{message: msg, last_sequence: curr_seq})
     end
