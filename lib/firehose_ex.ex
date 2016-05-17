@@ -24,7 +24,8 @@ defmodule FirehoseEx do
   def children(_), do: default_children
 
   def default_children, do: [
-    supervisor(FirehoseEx.Redis, [Application.get_env(:firehose_ex, :redis)])
+    supervisor(FirehoseEx.Redis, [Application.get_env(:firehose_ex, :redis)]),
+    supervisor(FirehoseEx.Channel.Supervisor, [])
   ]
 
   @version Mix.Project.config[:version]
