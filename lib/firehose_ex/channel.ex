@@ -29,8 +29,12 @@ defmodule FirehoseEx.Channel do
     case :global.whereis_name({:channel, channel_name}) do
       :undefined ->
         channel = %Channel{name: channel_name}
-        {:ok, pid} = FirehoseEx.Channel.Supervisor.start_channel(channel)
-        pid
+        case FirehoseEx.Channel.Supervisor.start_channel(channel) do
+          {:ok, pid} ->
+            pid
+          {:error, {:already_started, pid}} ->
+            pid
+        end
       pid ->
         pid
     end
