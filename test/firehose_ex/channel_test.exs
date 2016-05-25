@@ -6,7 +6,7 @@ defmodule FirehoseEx.Channel.Test do
   alias FirehoseEx.Channel
 
   def publish(chan, messages) do
-    spawn fn ->
+    Task.async fn ->
       messages
       |> Enum.each(&Channel.publish(chan, &1))
     end
@@ -83,5 +83,11 @@ defmodule FirehoseEx.Channel.Test do
     :timer.sleep(100)
     assert %FirehoseEx.Channel.Message{data: "{'test': 'message1'}", sequence: 1} = Channel.next_message(chan, 0)
     assert %FirehoseEx.Channel.Message{data: "{'test': 'message2'}", sequence: 2} = Channel.next_message(chan, 1)
+  end
+
+  test "client is way behind", %{channel: chan} do
+    FirehoseEx.Channel.set_buffer_size(chan, 10)
+    Task.await publish(chan, Enum.map(1..100, &to_string/1))
+    assert %FirehoseEx.Channel.Message{data: "91", sequence: 91} = Channel.next_message(chan, 0)
   end
 end
