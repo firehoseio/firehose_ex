@@ -34,6 +34,12 @@ defmodule FirehoseEx.Channel.Test do
     }}
   end
 
+  test "Channel.find", %{channel: chan} do
+    assert pid = Channel.find(chan)
+    assert is_pid(pid)
+    assert ^pid = Channel.find(chan)
+  end
+
   test "Channel.start_link", %{channel: chan} do
     {:ok, pid} = Channel.start_link(chan)
     assert Channel.find(chan.name) == pid

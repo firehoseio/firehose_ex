@@ -12,12 +12,14 @@ defmodule FirehoseEx.Channel do
   @default_buffer_size 100
 
   defstruct name: nil,
-            subscribers: [], # subs_table,
-            messages: [], # messages_table
+            subscribers: [], # TODO: probably switch to ETS table
+            messages: [],    # TODO: probably switch to ETS table
             buffer_size: @default_buffer_size,
             last_sequence: 0
 
   use GenServer
+
+  # Public API functions
 
   def find(%Channel{name: name}) do
     find(name)
@@ -46,6 +48,10 @@ defmodule FirehoseEx.Channel do
     GenServer.call find(channel), {:set_buffer_size, size}
   end
 
+  def next_message(channel_name, last_sequence) when is_binary(channel_name) do
+    next_message(%Channel{name: channel_name}, last_sequence)
+  end
+
   def next_message(channel = %Channel{name: chan_name}, last_sequence) do
     case GenServer.call find(channel), {:messages_since, last_sequence} do
       [] ->
@@ -54,11 +60,12 @@ defmodule FirehoseEx.Channel do
           {:next_message, msg, ^chan_name} ->
             msg
         end
-    messages ->
-      messages |> Enum.reverse |> Enum.at(0)
+        messages ->
+          messages |> Enum.reverse |> Enum.at(0)
+    end
   end
 
-  end
+  # GenServer callbacks
 
   def start_link(%FirehoseEx.Channel{} = channel) do
     GenServer.start_link(__MODULE__, channel, name: {:global, {:channel, channel.name}})
@@ -97,7 +104,9 @@ defmodule FirehoseEx.Channel do
     {:reply, message, channel}
   end
 
-  def broadcast(message, channel) do
+  # State internal helper functions
+
+  defp broadcast(message, channel) do
     spawn_link fn ->
       channel.subscribers
       |> Enum.each(fn sub ->
@@ -106,11 +115,11 @@ defmodule FirehoseEx.Channel do
     end
   end
 
-  def add_message(channel, message) do
+  defp add_message(channel, message) do
     update_in channel.messages, &(Enum.take([message | &1], channel.buffer_size))
   end
 
-  def add_subscriber(channel, sub) do
+  defp add_subscriber(channel, sub) do
     update_in channel.subscribers, &[sub|&1]
   end
 end
