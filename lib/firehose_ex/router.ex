@@ -44,7 +44,8 @@ defmodule FirehoseEx.Router do
       end
     )
 
-    {:ok, _sequence} = FirehoseEx.RedisChannel.publish(channel, body, opts)
+    # {:ok, _sequence} = FirehoseEx.RedisChannel.publish(channel, body, opts)
+    :ok = FirehoseEx.Channel.publish(channel, body, opts)
 
     conn
     |> put_resp_content_type("text/plain")

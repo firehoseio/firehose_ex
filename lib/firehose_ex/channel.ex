@@ -9,12 +9,10 @@ defmodule FirehoseEx.Channel do
   alias FirehoseEx.Channel
   alias FirehoseEx.Channel.Message
 
-  @default_buffer_size 100
-
   defstruct name: nil,
             subscribers: [], # TODO: probably switch to ETS table
             messages: [],    # TODO: probably switch to ETS table
-            buffer_size: @default_buffer_size,
+            buffer_size: nil,
             last_sequence: 0
 
   use GenServer
@@ -40,8 +38,8 @@ defmodule FirehoseEx.Channel do
     end
   end
 
-  def publish(channel, message) do
-    GenServer.call find(channel), {:publish, message}
+  def publish(channel, message, opts \\ []) do
+    GenServer.call find(channel), {:publish, message, opts}
   end
 
   def subscribe(channel, opts \\ [timeout: :infinity]) do
@@ -69,9 +67,24 @@ defmodule FirehoseEx.Channel do
     end
   end
 
+  def default_buffer_size do
+    Application.get_env(:firehose_ex, :channel)[:buffer_size]
+  end
+
+  def default_ttl do
+    Application.get_env(:firehose_ex, :channel)[:buffer_ttl]
+  end
+
   # GenServer callbacks
 
   def start_link(%FirehoseEx.Channel{} = channel) do
+    channel = case channel.buffer_size do
+      nil ->
+        put_in channel.buffer_size, default_buffer_size
+      _ ->
+        channel
+    end
+
     GenServer.start_link(__MODULE__, channel, name: {:global, {:channel, channel.name}})
   end
 
@@ -79,7 +92,10 @@ defmodule FirehoseEx.Channel do
     {:ok, channel}
   end
 
-  def handle_call({:publish, message}, _from, channel) do
+  def handle_call({:publish, message, opts}, _from, channel) do
+    ttl = opts[:ttl] || default_ttl
+    channel = _set_buffer_size(channel, opts[:buffer_size])
+
     Logger.debug "PUBLISH: #{inspect message} TO: #{channel.name}"
     channel = update_in channel.last_sequence, &(&1 + 1)
     message = %Message{data: message, sequence: channel.last_sequence}
@@ -92,14 +108,9 @@ defmodule FirehoseEx.Channel do
     {:reply, :ok, channel |> add_subscriber(pid)}
   end
 
-  def handle_call({:set_buffer_size, size}, _, channel) when size > 0 do
+  def handle_call({:set_buffer_size, size}, _, channel) do
     Logger.debug "SET BUFFER_SIZE: #{size} FOR: #{channel.name}"
-    channel = %{
-      channel |
-      buffer_size: size,
-      messages: Enum.take(channel.messages, size)
-    }
-    {:reply, :ok, channel}
+    {:reply, :ok, _set_buffer_size(channel, size)}
   end
 
   def handle_call({:messages_since, last_sequence}, _, channel) do
@@ -126,4 +137,14 @@ defmodule FirehoseEx.Channel do
   defp add_subscriber(channel, sub) do
     update_in channel.subscribers, &[sub|&1]
   end
+
+  defp _set_buffer_size(channel, size) when is_integer(size) and size > 0 do
+    %{
+      channel |
+      buffer_size: size,
+      messages: Enum.take(channel.messages, size)
+    }
+  end
+
+  defp _set_buffer_size(channel, _), do: channel
 end
