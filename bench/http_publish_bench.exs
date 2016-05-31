@@ -66,8 +66,21 @@ defmodule HttpPublishBenchmark do
       Agent.update(:request_counter, &(&1 + 1))
       result
     rescue
-      _ in HTTPotion.HTTPError ->
-        publish(channel, counter)
+      err in HTTPotion.HTTPError ->
+        case err.message do
+          "retry_later" ->
+            IO.puts "retry later, wait 10ms"
+            receive do
+              after 10 ->
+                publish(channel, counter)
+            end
+          "econnrefused" ->
+            IO.puts "connection refused, stopping"
+            raise err
+          _ ->
+            IO.inspect err
+            publish(channel, counter)
+        end
     end
   end
 
@@ -78,7 +91,10 @@ defmodule HttpPublishBenchmark do
 
   def multi_publish(n, channel) when n > 1 do
     publish(channel, counter_val)
-    multi_publish(n - 1, channel)
+    receive do
+      after :random.uniform(25) ->
+        multi_publish(n - 1, channel)
+    end
   end
 
   def async_get(channel) do
