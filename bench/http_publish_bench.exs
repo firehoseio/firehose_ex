@@ -1,44 +1,47 @@
 defmodule HttpPublishBenchmark do
   use Benchfella
+  require Logger
 
   setup_all do
     HTTPotion.start
-    {:ok, counter} = Agent.start(fn -> 0 end, name: :request_counter)
-    collector = spawn(__MODULE__, :response_collector, [0])
-    Process.register(collector, :response_collector)
-
-    {:ok, [counter: counter, collector: collector]}
+    {:ok, []}
   end
 
-  teardown_all [counter: counter, collector: coll] do
+  def setup(publish_amount, get_amount) do
+    {:ok, publish_counter} = Agent.start(fn -> 0 end)
+    collector = spawn_link(__MODULE__, :response_collector, [0, get_amount])
+    # Process.register(collector, :response_collector)
+    {publish_counter, collector}
+  end
+
+  def teardown({counter, coll}) do
     if coll != nil do
       send coll, {:awaiting_results, self}
       receive do
         {:collected, count} ->
-          IO.puts "Received #{count} results"
+          Logger.info "TEARDOWN #{inspect counter} #{inspect coll} | Received #{count} results"
         after 1000 ->
           send coll, {:get_results, self}
           receive do
             {:collected, count} ->
-              IO.puts "Received #{count} results"
-            after 1000 ->
-              IO.puts "Error: timeout after 5 secs"
+              Logger.info "TEARDOWN #{inspect counter} #{inspect coll} | Received #{count} results"
+            after 5000 ->
+              Logger.error "TEARDOWN | Timeout after 5 secs"
           end
       end
     end
 
-    Process.exit(counter, :kill)
-    Process.exit(coll, :kill)
+    true = Process.exit(counter, :kill)
+    true = Process.exit(coll, :kill)
   end
 
-
-  def response_collector(count, parent \\ nil) do
+  def response_collector(count, get_amount, parent \\ nil) do
     receive do
       {:awaiting_results, parent} ->
-        if count == counter_val do
+        if count == get_amount do
           send parent, {:collected, count}
         else
-          response_collector count, parent
+          response_collector count, get_amount, parent
         end
       {:get_results, parent} ->
         send parent, {:collected, count}
@@ -46,13 +49,17 @@ defmodule HttpPublishBenchmark do
       # responses
       %HTTPotion.AsyncEnd{} ->
         count = count + 1
-        if count >= counter_val && parent != nil do
+        if count >= get_amount && parent != nil do
           send parent, {:collected, count}
         else
-          response_collector count, parent
+          response_collector count, get_amount, parent
         end
-      _ ->
-        response_collector count, parent
+      %HTTPotion.AsyncHeaders{} ->
+        response_collector count, get_amount, parent
+      %HTTPotion.AsyncChunk{} ->
+        response_collector count, get_amount, parent
+      msg ->
+        Logger.error "COLLECTOR | Unexpected message: #{inspect msg}"
     end
   end
 
@@ -60,65 +67,68 @@ defmodule HttpPublishBenchmark do
     "http://localhost:7474/#{channel}"
   end
 
-  def publish(channel, counter) do
+  def publish(channel, publish_counter) do
     try do
+      counter = counter_val(publish_counter)
+      # IO.puts "pub #{counter} @ #{channel}"
       result = HTTPotion.put uri(channel), [body: "{'hello': 'world', 'counter': #{counter}}", headers: ["content-type": "application/json"]]
-      Agent.update(:request_counter, &(&1 + 1))
+      Agent.update(publish_counter, &(&1 + 1))
       result
     rescue
       err in HTTPotion.HTTPError ->
+        Agent.update(publish_counter, &(&1 - 1))
         case err.message do
           "retry_later" ->
-            IO.puts "retry later, wait 10ms"
+            Logger.debug "PUBLISH | Retry later, wait 10ms"
             receive do
               after 10 ->
-                publish(channel, counter)
+                publish(channel, publish_counter)
             end
           "econnrefused" ->
-            IO.puts "connection refused, stopping"
+            Logger.error "PUBLISH | Connection refused, stopping"
             raise err
           _ ->
-            IO.inspect err
-            publish(channel, counter)
+            Logger.error "PUBLISH | #{inspect(err)}"
+            publish(channel, publish_counter)
         end
     end
   end
 
-  def multi_publish(1, channel) do
-    publish(channel, counter_val)
+  def multi_publish(1, channel, publish_counter) do
+    publish(channel, publish_counter)
     :ok
   end
 
-  def multi_publish(n, channel) when n > 1 do
-    publish(channel, counter_val)
-    receive do
-      after :random.uniform(25) ->
-        multi_publish(n - 1, channel)
-    end
+  def multi_publish(n, channel, publish_counter) when n > 1 do
+    publish(channel, publish_counter)
+    # receive do
+    #   after :random.uniform(25) ->
+        multi_publish(n - 1, channel, publish_counter)
+    # end
   end
 
-  def async_get(channel) do
+  def async_get(channel, sequence, collector) do
     try do
       HTTPotion.get(
-        uri(channel) <> "?last_message_sequence=#{counter_val}",
+        uri(channel) <> "?last_message_sequence=#{sequence}",
         headers: ["content-type": "application/json"],
-        stream_to: Process.whereis(:response_collector)
+        stream_to: collector
       )
     rescue
       _ in HTTPotion.HTTPError ->
-        async_get(channel)
+        async_get(channel, sequence, collector)
     end
     :ok
   end
 
-  def async_multi_get(1, channel) do
-    async_get(channel)
+  def async_multi_get(1, channel, publish_counter, collector) do
+    async_get(channel, counter_val(publish_counter), collector)
     :ok
   end
 
-  def async_multi_get(amount, channel) when amount > 1 do
-    async_get(channel)
-    async_multi_get(amount - 1, channel)
+  def async_multi_get(amount, channel, publish_counter, collector) when amount > 1 do
+    async_get(channel, counter_val(publish_counter), collector)
+    async_multi_get(amount - 1, channel, publish_counter, collector)
   end
 
   def await_async_multi(amount, fun) do
@@ -131,36 +141,59 @@ defmodule HttpPublishBenchmark do
     |> Enum.map(&Task.await(&1, 10000))
   end
 
-  def get(channel) do
+  def get(channel, counter_pid) do
     HTTPotion.get(
-      uri(channel) <> "?last_message_sequence=#{counter_val}",
+      uri(channel) <> "?last_message_sequence=#{counter_val(counter_pid)}",
       headers: ["content-type": "application/json"]
     )
   end
 
-  def counter_val do
-    Agent.get(:request_counter, &(&1))
+  def counter_val(nil), do: raise("counter_pid is nil!")
+  def counter_val(counter_pid) do
+    Agent.get(counter_pid, &(&1))
   end
 
   def multi_publish_get(publish_amount, get_amount, channel) do
+    setup_data = {publish_counter, collector} = setup(publish_amount, get_amount)
+
+    # Channel.find(channel) # make sure chan process is started
     t1 = Task.async fn ->
-      multi_publish(publish_amount, channel)
+      Logger.info "Publishing #{publish_amount} messages to #{channel}"
+      multi_publish(publish_amount, channel, publish_counter)
     end
     t2 = Task.async fn ->
-      async_multi_get(get_amount, channel)
+      async_multi_get(get_amount, channel, publish_counter, collector)
     end
-    Task.await(t1)
-    Task.await(t2)
+    Task.await(t1, 10000)
+    Task.await(t2, 10000)
+
+    teardown(setup_data)
   end
 
-  bench "http-p010r010", do: multi_publish_get(10, 10, "test/channel")
-  bench "http-p050r025", do: multi_publish_get(50, 25, "test/channel")
-  bench "http-p050r050", do: multi_publish_get(50, 50, "test/channel")
+  def random_channel do
+    :random.seed(:erlang.timestamp)
+    "test/channel/#{:random.uniform(1_000_000)}"
+  end
+
+  # bench "http-p010r010", do: multi_publish_get(10, 10,   random_channel)
+  # bench "http-p050r025", do: multi_publish_get(50, 25,   random_channel)
+  # bench "http-p050r050", do: multi_publish_get(50, 50,   random_channel)
+  # bench "http-p100r100", do: multi_publish_get(100, 100, random_channel)
+  # bench "http-p200r100", do: multi_publish_get(200, 100, random_channel)
+  # bench "http-p200r200", do: multi_publish_get(200, 200, random_channel)
+  # bench "http-p500r200", do: multi_publish_get(500, 200, random_channel)
+  # bench "http-p500r500", do: multi_publish_get(500, 500, random_channel)
+
+  bench "http-p010r010", do: multi_publish_get(10, 10,   "test/channel")
+  bench "http-p050r025", do: multi_publish_get(50, 25,   "test/channel")
+  bench "http-p050r050", do: multi_publish_get(50, 50,   "test/channel")
   bench "http-p100r100", do: multi_publish_get(100, 100, "test/channel")
   bench "http-p200r100", do: multi_publish_get(200, 100, "test/channel")
   bench "http-p200r200", do: multi_publish_get(200, 200, "test/channel")
   bench "http-p500r200", do: multi_publish_get(500, 200, "test/channel")
   bench "http-p500r500", do: multi_publish_get(500, 500, "test/channel")
+  bench "http-p10r500",  do: multi_publish_get(10, 500,  "test/channel")
+  bench "http-p20r1000", do: multi_publish_get(20, 1000, "test/channel")
 
   # bench "http-2-p10r025" do
   #   await_async_multi 2, fn i ->
