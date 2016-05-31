@@ -12,7 +12,7 @@ defmodule FirehoseEx.WebServer do
     {:ok, _} = Plug.Adapters.Cowboy.http(
       FirehoseEx.Router,
       [],
-      [port: port, ip: {127, 0, 0, 1}]
+      [port: port, ip: {127, 0, 0, 1}, acceptors: 250]
     )
   end
 end
