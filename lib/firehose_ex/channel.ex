@@ -19,10 +19,6 @@ defmodule FirehoseEx.Channel do
 
   # Public API functions
 
-  def find(%Channel{name: name}) do
-    find(name)
-  end
-
   def find(channel_name) when is_binary(channel_name) do
     case :global.whereis_name({:channel, channel_name}) do
       :undefined ->
@@ -50,16 +46,12 @@ defmodule FirehoseEx.Channel do
     GenServer.call find(channel), {:set_buffer_size, size}
   end
 
-  def next_message(channel_name, last_sequence) when is_binary(channel_name) do
-    next_message(%Channel{name: channel_name}, last_sequence)
-  end
-
-  def next_message(channel = %Channel{name: chan_name}, last_sequence) do
+  def next_message(channel, last_sequence) when is_binary(channel) do
     case GenServer.call find(channel), {:messages_since, last_sequence} do
       [] ->
         subscribe(channel)
         receive do
-          {:next_message, msg, ^chan_name} ->
+          {:next_message, msg, ^channel} ->
             msg
         end
         messages ->
@@ -77,7 +69,7 @@ defmodule FirehoseEx.Channel do
 
   # GenServer callbacks
 
-  def start_link(%FirehoseEx.Channel{} = channel) do
+  def start_link(channel) do
     channel = case channel.buffer_size do
       nil ->
         put_in channel.buffer_size, default_buffer_size

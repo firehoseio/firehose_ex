@@ -19,7 +19,7 @@ defmodule FirehoseEx.Channel.Test do
         %Channel.Message{data: ^message, sequence: ^sequence},
         chan_name
       } ->
-        assert chan_name == chan.name
+        assert chan_name == chan
       msg ->
         assert false
       after timeout ->
@@ -30,7 +30,7 @@ defmodule FirehoseEx.Channel.Test do
   setup do
     :random.seed(:erlang.timestamp)
     {:ok, %{
-      channel: %Channel{name: "/test_channel/#{:random.uniform(1_000_000)}"}
+      channel: "/test_channel/#{:random.uniform(1_000_000)}"
     }}
   end
 
@@ -41,8 +41,8 @@ defmodule FirehoseEx.Channel.Test do
   end
 
   test "Channel.start_link", %{channel: chan} do
-    {:ok, pid} = Channel.start_link(chan)
-    assert Channel.find(chan.name) == pid
+    {:ok, pid} = Channel.start_link(%Channel{name: chan})
+    assert Channel.find(chan) == pid
   end
 
   test "Channel.publish", %{channel: chan} do
