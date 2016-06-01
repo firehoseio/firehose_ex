@@ -70,6 +70,8 @@ defmodule FirehoseX.Channel do
   # GenServer callbacks
 
   def start_link(channel) do
+    Logger.info "Starting Channel #{channel.name}"
+
     channel = case channel.buffer_size do
       nil ->
         put_in channel.buffer_size, default_buffer_size
