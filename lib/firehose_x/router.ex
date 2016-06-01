@@ -1,20 +1,20 @@
-defmodule FirehoseEx.Router do
+defmodule FirehoseX.Router do
   @moduledoc """
-  Basic HTTP Router module for FirehoseEx.
+  Basic HTTP Router module for FirehoseX.
   """
 
   require Logger
   use Plug.Router
 
   def init(_) do
-    Logger.info "Starting FirehoseEx.Router"
+    Logger.info "Starting FirehoseX.Router"
   end
 
   if Mix.env == :dev do
     use Plug.Debugger, otp_app: :firehose_ex
   end
 
-  plug Plug.Logger
+  # plug Plug.Logger
   plug :match
   plug :dispatch
 
@@ -44,7 +44,7 @@ defmodule FirehoseEx.Router do
       end
     )
 
-    :ok = FirehoseEx.Channel.publish(channel, body, opts)
+    :ok = FirehoseX.Channel.publish(channel, body, opts)
 
     conn
     |> put_resp_content_type("text/plain")
@@ -59,7 +59,7 @@ defmodule FirehoseEx.Router do
       conn
       |> send_resp(400, "The last_message_sequence parameter may not be less than zero")
     else
-      msg = FirehoseEx.Channel.next_message(conn.request_path, last_sequence)
+      msg = FirehoseX.Channel.next_message(conn.request_path, last_sequence)
       conn
       |> json_response(200, %{message: msg.data, last_sequence: msg.sequence})
     end

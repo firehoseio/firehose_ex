@@ -1,4 +1,4 @@
-defmodule FirehoseEx.Channel do
+defmodule FirehoseX.Channel do
   defmodule Message do
     defstruct data: nil,
               sequence: 1
@@ -6,8 +6,8 @@ defmodule FirehoseEx.Channel do
 
   require Logger
 
-  alias FirehoseEx.Channel
-  alias FirehoseEx.Channel.Message
+  alias FirehoseX.Channel
+  alias FirehoseX.Channel.Message
 
   defstruct name: nil,
             subscribers: [], # TODO: probably switch to ETS table
@@ -23,7 +23,7 @@ defmodule FirehoseEx.Channel do
     case :global.whereis_name({:channel, channel_name}) do
       :undefined ->
         channel = %Channel{name: channel_name}
-        case FirehoseEx.Channel.Supervisor.start_channel(channel) do
+        case FirehoseX.Channel.Supervisor.start_channel(channel) do
           {:ok, pid} ->
             pid
           {:error, {:already_started, pid}} ->

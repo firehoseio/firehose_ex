@@ -1,4 +1,4 @@
-defmodule FirehoseEx.Channel.Supervisor do
+defmodule FirehoseX.Channel.Supervisor do
   require Logger
   use Supervisor
 
@@ -8,7 +8,7 @@ defmodule FirehoseEx.Channel.Supervisor do
     Supervisor.start_link(__MODULE__, :ok, name: @supervisor_name)
   end
 
-  def start_channel(%FirehoseEx.Channel{} = channel) do
+  def start_channel(%FirehoseX.Channel{} = channel) do
     Supervisor.start_child(@supervisor_name, [channel])
   end
 
@@ -16,10 +16,10 @@ defmodule FirehoseEx.Channel.Supervisor do
     import Supervisor.Spec, warn: false
 
     children = [
-      worker(FirehoseEx.Channel, [], restart: :transient)
+      worker(FirehoseX.Channel, [], restart: :transient)
     ]
 
-    Logger.info "Starting FirehoseEx.Channel.Supervisor"
+    Logger.info "Starting FirehoseX.Channel.Supervisor"
 
     supervise(children, strategy: :simple_one_for_one, name: @supervisor_name)
   end

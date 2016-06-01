@@ -1,16 +1,16 @@
-# FirehoseEx
+# FirehoseX
 ## Firehose Rewrite (Proof of Concept) in Elixir
 
-### FirehoseEx OTP Application layout - Channel Processes Implementation
+### FirehoseX OTP Application layout - Channel Processes Implementation
 
-* FirehoseEx Application Supervisor
-  * `FirehoseEx.WebServer` (Worker)
-    * Cowboy web server supervision tree using `FirehoseEx.Router` for routing
+* FirehoseX Application Supervisor
+  * `FirehoseX.WebServer` (Worker)
+    * Cowboy web server supervision tree using `FirehoseX.Router` for routing
       incoming HTTP Long-Polling requests
-    * Handle WebSocket requests via `FirehoseEx.Router.WebSocket`
+    * Handle WebSocket requests via `FirehoseX.Router.WebSocket`
       (TODO - not yet implemented)
-  * `FirehoseEx.Channel.Supervisor` (Supervisor)
-    * `FirehoseEx.Channel` (worker)
+  * `FirehoseX.Channel.Supervisor` (Supervisor)
+    * `FirehoseX.Channel` (worker)
       1 per active channel per cluster using global registration
 
 

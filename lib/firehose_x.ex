@@ -1,6 +1,6 @@
-defmodule FirehoseEx do
+defmodule FirehoseX do
   @moduledoc """
-  FirehoseEx is a rewrite of PollEverywhere's Firehose in Elixir & Erlang/OTP.
+  FirehoseX is a rewrite of PollEverywhere's Firehose in Elixir & Erlang/OTP.
   """
 
   use Application
@@ -13,18 +13,18 @@ defmodule FirehoseEx do
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: FirehoseEx.Supervisor]
+    opts = [strategy: :one_for_one, name: FirehoseX.Supervisor]
     Supervisor.start_link(children(args), opts)
   end
 
   def children(web_server: true), do: [
-    worker(FirehoseEx.WebServer, [web_conf]) | default_children
+    worker(FirehoseX.WebServer, [web_conf]) | default_children
   ]
 
   def children(_), do: default_children
 
   def default_children, do: [
-    supervisor(FirehoseEx.Channel.Supervisor, [])
+    supervisor(FirehoseX.Channel.Supervisor, [])
   ]
 
   @version Mix.Project.config[:version]

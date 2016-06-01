@@ -1,9 +1,9 @@
 defmodule PublishBenchmark do
   use Benchfella
-  alias FirehoseEx.Channel
+  alias FirehoseX.Channel
 
   setup_all do
-    {:ok, _pid} = FirehoseEx.start(nil, web_server: false)
+    {:ok, _pid} = FirehoseX.start(nil, web_server: false)
     {:ok, counter} = Agent.start(fn -> 0 end, name: :request_counter)
     IO.puts "Counter: #{counter_val}"
     {:ok, [counter: counter]}

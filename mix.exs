@@ -1,4 +1,4 @@
-defmodule FirehoseEx.Mixfile do
+defmodule FirehoseX.Mixfile do
   use Mix.Project
 
   def project do
@@ -20,7 +20,7 @@ defmodule FirehoseEx.Mixfile do
       applications: [
         :logger, :plug, :cowboy, :poolboy, :redix, :httpotion
       ],
-      mod: {FirehoseEx, []}
+      mod: {FirehoseX, []}
     ]
   end
 

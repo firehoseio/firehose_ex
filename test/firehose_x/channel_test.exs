@@ -1,9 +1,9 @@
-defmodule FirehoseEx.Channel.Test do
+defmodule FirehoseX.Channel.Test do
   use ExUnit.Case
   use TestHelper
 
-  doctest FirehoseEx.Channel
-  alias FirehoseEx.Channel
+  doctest FirehoseX.Channel
+  alias FirehoseX.Channel
 
   def publish(chan, messages) do
     Task.async fn ->
@@ -81,13 +81,13 @@ defmodule FirehoseEx.Channel.Test do
     messages = ["{'test': 'message1'}", "{'test': 'message2'}"]
     publish(chan, messages)
     :timer.sleep(100)
-    assert %FirehoseEx.Channel.Message{data: "{'test': 'message1'}", sequence: 1} = Channel.next_message(chan, 0)
-    assert %FirehoseEx.Channel.Message{data: "{'test': 'message2'}", sequence: 2} = Channel.next_message(chan, 1)
+    assert %FirehoseX.Channel.Message{data: "{'test': 'message1'}", sequence: 1} = Channel.next_message(chan, 0)
+    assert %FirehoseX.Channel.Message{data: "{'test': 'message2'}", sequence: 2} = Channel.next_message(chan, 1)
   end
 
   test "client is way behind", %{channel: chan} do
-    FirehoseEx.Channel.set_buffer_size(chan, 10)
+    FirehoseX.Channel.set_buffer_size(chan, 10)
     Task.await publish(chan, Enum.map(1..100, &to_string/1))
-    assert %FirehoseEx.Channel.Message{data: "91", sequence: 91} = Channel.next_message(chan, 0)
+    assert %FirehoseX.Channel.Message{data: "91", sequence: 91} = Channel.next_message(chan, 0)
   end
 end
