@@ -9,6 +9,8 @@ defmodule FirehoseX do
   # See http://elixir-lang.org/docs/stable/elixir/Application.html
   # for more information on OTP Applications
   def start(_type, args) do
+    connect_to_cluster
+
     args = Keyword.merge([web_server: true], args)
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
@@ -38,5 +40,21 @@ defmodule FirehoseX do
       nil -> conf
       p   -> conf |> Keyword.merge(port: p |> String.to_integer)
     end
+  end
+
+  def connect_to_cluster do
+    nodes
+    |> Enum.each(&connect_to_node/1)
+  end
+
+  def connect_to_node(node) do
+    require Logger
+    Logger.info "Connecting to node #{node}"
+    Node.connect(node)
+  end
+
+  def nodes do
+    config_nodes = Application.get_env(:firehose_ex, :nodes) || []
+    [Node.self | config_nodes]
   end
 end
