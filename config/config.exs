@@ -10,6 +10,9 @@ config :logger, :console,
 config :firehose_ex, :web,
   port: 7474
 
+config :firehose_ex, :nodes,
+  []
+
 config :firehose_ex, :channel,
   buffer_size: 100,  # default channel buffer size
   buffer_ttl:  60 * 60 * 24
