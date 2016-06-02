@@ -59,9 +59,15 @@ defmodule FirehoseX.Router do
       conn
       |> send_resp(400, "The last_message_sequence parameter may not be less than zero")
     else
-      msg = FirehoseX.Channel.next_message(conn.request_path, last_sequence)
-      conn
-      |> json_response(200, %{message: msg.data, last_sequence: msg.sequence})
+      case FirehoseX.Channel.next_message(conn.request_path, last_sequence, 10000) do
+        :timeout ->
+          Logger.info "#{inspect self} Client timed out, sending empty response"
+          conn
+          |> json_response(304, "")
+        msg ->
+          conn
+          |> json_response(200, %{message: msg.data, last_sequence: msg.sequence})
+      end
     end
   end
 

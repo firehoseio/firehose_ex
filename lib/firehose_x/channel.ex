@@ -46,13 +46,15 @@ defmodule FirehoseX.Channel do
     GenServer.call find(channel), {:set_buffer_size, size}
   end
 
-  def next_message(channel, last_sequence) when is_binary(channel) do
+  def next_message(channel, last_sequence, timeout \\ 5000) when is_binary(channel) do
     case GenServer.call find(channel), {:messages_since, last_sequence} do
       [] ->
         subscribe(channel)
         receive do
           {:next_message, msg, ^channel} ->
             msg
+          after timeout ->
+            :timeout
         end
         messages ->
           messages |> Enum.reverse |> Enum.at(0)
