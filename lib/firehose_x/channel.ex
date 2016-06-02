@@ -56,8 +56,8 @@ defmodule FirehoseX.Channel do
           after timeout ->
             :timeout
         end
-        messages ->
-          messages |> Enum.reverse |> Enum.at(0)
+      messages ->
+        messages |> Enum.reverse |> Enum.at(0)
     end
   end
 
