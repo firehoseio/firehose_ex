@@ -14,7 +14,7 @@ defmodule FirehoseX.Router do
     use Plug.Debugger, otp_app: :firehose_ex
   end
 
-  # plug Plug.Logger
+  plug Plug.Logger
   plug :match
   plug :dispatch
 
