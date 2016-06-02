@@ -4,7 +4,13 @@ defmodule HttpPublishBenchmark do
 
   setup_all do
     HTTPotion.start
-    {:ok, []}
+    {:ok, global_counter} = Agent.start(fn -> 0 end, name: :global_counter)
+    {:ok, [global_counter: global_counter]}
+  end
+
+  def teardown_all([global_counter: gc]) do
+    total_count = Agent.get(:global_counter, &(&1))
+    Logger.info "Published a total of #{total_count} messages."
   end
 
   def setup(publish_amount, get_amount) do
@@ -19,11 +25,13 @@ defmodule HttpPublishBenchmark do
       send coll, {:awaiting_results, self}
       receive do
         {:collected, count} ->
+          Agent.update(:global_counter, &(&1 + count))
           Logger.info "TEARDOWN #{inspect counter} #{inspect coll} | Received #{count} results"
         after 1000 ->
           send coll, {:get_results, self}
           receive do
             {:collected, count} ->
+              Agent.update(:global_counter, &(&1 + count))
               Logger.info "TEARDOWN #{inspect counter} #{inspect coll} | Received #{count} results"
             after 5000 ->
               Logger.error "TEARDOWN | Timeout after 5 secs"
