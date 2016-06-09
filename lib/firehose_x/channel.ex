@@ -57,7 +57,7 @@ defmodule FirehoseX.Channel do
             :timeout
         end
       messages ->
-        messages |> Enum.reverse |> Enum.at(0)
+        messages |> List.last
     end
   end
 
